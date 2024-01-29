@@ -2,6 +2,7 @@ package in.codelantern.cmrvideostreaming.controllers;
 
 
 import in.codelantern.cmrvideostreaming.models.User;
+import in.codelantern.cmrvideostreaming.models.UserData;
 import in.codelantern.cmrvideostreaming.repositories.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,9 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/user")
+@CrossOrigin
 public class UserController {
+
 
 
     @Autowired
@@ -40,26 +43,41 @@ public class UserController {
         return  new ResponseEntity<>(savedUser,HttpStatusCode.valueOf(200));
     }
 
-    @GetMapping("/login")
+
+    @PostMapping("/get-user-by-id/{id}")
+    public Optional<User> getUserById(@PathVariable Long id){
+        return userRepository.findById(id);
+    }
+
+    @PostMapping("/login")
     public ResponseEntity<?> attemptLogin(@RequestBody User user){
         var email = user.getEmail();
         var password = user.getPassword();
+        HashMap<String,String> responseMap = new HashMap<>();
         Optional<User> userObject = userRepository.findByEmail(email);
         if(userObject.isPresent()){
             if(userObject.get().getPassword().equals(password)){
-                return new ResponseEntity<>("login successful",HttpStatusCode.valueOf(200));
+                responseMap.put("isAuthenticated","true");
+                var userID = userObject.get().getId();
+                responseMap.put("userID",userID+"");
+                return new ResponseEntity<>(responseMap,HttpStatusCode.valueOf(200));
             }else{
-                return new ResponseEntity<>("login denied",HttpStatusCode.valueOf(200));
+                responseMap.put("isAuthenticated","false");
+                responseMap.put("reason","Password does not match");
+                return new ResponseEntity<>(responseMap,HttpStatusCode.valueOf(200));
             }
         }else{
-            return new ResponseEntity<>("user with provided email does not exists",HttpStatus.valueOf(200));
+            responseMap.put("isAuthenticated","false");
+            responseMap.put("reason","email is incorrect");
+            return new ResponseEntity<>(responseMap,HttpStatus.valueOf(200));
         }
     }
 
 
-
-
-
+    @PostMapping("/save-user-data/{id}")
+    public ResponseEntity<?> saveUserData(@RequestBody UserData userData, @PathVariable Long id){
+        return new ResponseEntity<>(id,HttpStatus.ACCEPTED);
+    }
 
 
 }
